@@ -1,0 +1,30 @@
+{
+  "name": "@paseo-plugins/claude-tty-acp",
+  "private": true,
+  "version": "0.4.0",
+  "description": "ACP adapter for interactive Claude Code sessions",
+  "type": "module",
+  "bin": {
+    "claude-tty-acp": "bin/claude-tty-acp"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "diagnose": "pnpm build && ./bin/claude-tty-acp --diagnose",
+    "smoke:live": "pnpm build && node dist/live-smoke.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^0.17.1",
+    "@xterm/headless": "^6.0.0",
+    "node-pty": "1.2.0-beta.15",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.3"
+  }
+}
