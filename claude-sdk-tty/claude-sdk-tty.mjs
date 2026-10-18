@@ -1022,7 +1022,10 @@ class Bridge {
     for (const record of readJsonl(file)) {
       const key = recordKey(record);
       if (key) this.seen.add(key);
-      if (record.type === "assistant") for (const block of record.message?.content || []) if (block?.type === "tool_use") this.rootToolUses.add(block.id);
+      if (record.type !== "assistant") continue;
+      for (const block of record.message?.content || []) if (block?.type === "tool_use") this.rootToolUses.add(block.id);
+      // A compact right after the resume (the composer's resume offer) reports this as its starting size.
+      if (record.message?.usage && record.message.model !== "<synthetic>") this.lastContextTokens = usageTotal(record.message.usage);
     }
     const subagents = path.join(path.dirname(file), this.sessionId, "subagents");
     try {

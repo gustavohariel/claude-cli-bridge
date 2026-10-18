@@ -137,6 +137,19 @@ test("the compact boundary Claude writes late is not sent a second time", async 
   assert.equal(sent.filter((message) => message.subtype === "compact_boundary").length, 1);
 });
 
+test("a compact right after a resume reports the resumed context's size", async () => {
+  const projectDir = path.dirname(sessionDir);
+  writeFileSync(
+    path.join(projectDir, `${sessionId}.jsonl`),
+    jsonl([{ type: "assistant", uuid: "u9", message: { id: "m9", model: "claude-opus-5-5", usage: { input_tokens: 10, cache_read_input_tokens: 120_000, output_tokens: 500 }, content: [] } }]),
+    { flag: "a" },
+  );
+  const { bridge, sent } = resumedBridge();
+  bridge.openTurn({ kind: "human", compact: true });
+  await bridge.onHook({ hook_event_name: "PostCompact", trigger: "manual" }, async () => ({}));
+  assert.equal(sent.find((message) => message.subtype === "compact_boundary").compact_metadata.pre_tokens, 120_510);
+});
+
 test("a prompt that opens with an image is typed text first", async () => {
   const { toAcpContent } = await import("./claude-sdk-tty.mjs");
   const blocks = toAcpContent([
