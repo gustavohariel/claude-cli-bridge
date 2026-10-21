@@ -1068,6 +1068,27 @@ class Bridge {
     }
   }
 
+  /**
+   * The host dates a request's prompt cache from its `message_start` (it compacts idle threads just before
+   * that cache expires), and the interactive CLI streams nothing, so one goes out with a message's first record.
+   * That record lands once the first content block is done, so the host's date runs late by that long.
+   */
+  sendMessageStart(message) {
+    const lateMs = Date.now() - (this.lastApiRequestAt ?? Number.NaN);
+    // The host starts compacting 2 minutes before the expiry it computes; later than that misses the cache.
+    if (lateMs > 90_000) log("message_start sent late", { messageId: message.id, lateMs });
+    this.send({
+      type: "stream_event",
+      event: {
+        type: "message_start",
+        message: { id: message.id, type: "message", role: "assistant", model: message.model, content: [], stop_reason: null, stop_sequence: null, usage: message.usage },
+      },
+      parent_tool_use_id: null,
+      session_id: this.sessionId,
+      uuid: randomUUID(),
+    });
+  }
+
   onRootRecord(record) {
     switch (record.type) {
       case "assistant": {
@@ -1078,7 +1099,10 @@ class Bridge {
         if (!this.turn) this.openTurn({ kind: "wake" });
         const id = message.id;
         if (id && message.usage && message.model !== "<synthetic>") {
-          if (!this.turn.usage.has(id)) this.turn.numTurns += 1;
+          if (!this.turn.usage.has(id)) {
+            this.turn.numTurns += 1;
+            this.sendMessageStart(message);
+          }
           this.turn.usage.set(id, message.usage);
           this.lastContextTokens = usageTotal(message.usage);
         }
@@ -1098,6 +1122,9 @@ class Bridge {
         for (const block of message.content || []) if (block.type === "tool_use") this.onToolUse(block);
         return;
       }
+      case "api-request":
+        this.lastApiRequestAt = Date.parse(record.timestamp);
+        return;
       case "queue-operation":
         // Claude queues a <task-notification> the moment a background task ends, whether or not it is busy.
         if (record.operation === "enqueue" && typeof record.content === "string" && record.content.startsWith("<task-notification>")) {

@@ -202,3 +202,24 @@ test("a /compact Claude refuses ends its turn with Claude's reason", async () =>
   assert.ok(runtimeTurnEnded);
   assert.deepEqual(sent.filter((message) => message.type === "result").map((message) => [message.is_error, message.result]), [[true, "Error during compaction: You've hit your session limit"]]);
 });
+
+test("a message's first record is announced with its usage, as a streamed request would be", () => {
+  const { bridge, sent } = resumedBridge();
+  const usage = { input_tokens: 3, output_tokens: 10, cache_read_input_tokens: 150_000, cache_creation_input_tokens: 2_000, cache_creation: { ephemeral_1h_input_tokens: 2_000, ephemeral_5m_input_tokens: 0 } };
+  const message = (content) => ({ id: "msg_1", model: "claude-opus-5-5", usage, content });
+  bridge.onRecord({ type: "api-request", id: "req2", timestamp: new Date().toISOString() });
+  bridge.onRecord({ type: "assistant", uuid: "a1", message: message([{ type: "thinking", thinking: "hm" }]) });
+  bridge.onRecord({ type: "assistant", uuid: "a2", message: message([{ type: "text", text: "hi" }]) });
+  const starts = sent.filter((m) => m.type === "stream_event" && m.event.type === "message_start");
+  assert.equal(starts.length, 1);
+  assert.equal(starts[0].event.message.id, "msg_1");
+  assert.deepEqual(starts[0].event.message.usage, usage);
+  assert.equal(sent.indexOf(starts[0]), sent.findIndex((m) => m.type === "assistant") - 1);
+});
+
+test("a synthetic notice is not announced as a request", () => {
+  const { bridge, sent } = resumedBridge();
+  bridge.openTurn({ kind: "wake" });
+  bridge.onRecord({ type: "assistant", uuid: "a3", message: { id: "msg_s", model: "<synthetic>", usage: { input_tokens: 0, output_tokens: 0 }, content: [{ type: "text", text: "limit" }] } });
+  assert.equal(sent.filter((m) => m.type === "stream_event").length, 0);
+});
