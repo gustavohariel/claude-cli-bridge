@@ -415,7 +415,7 @@ export class ClaudeRuntime {
       if (this.turn === turn) {
         this.turn = null;
         this.interactions.cancelPending();
-        writeLog({ level: "error", message: "Failed to put a prompt to Claude", sessionId: this.sessionId, error: errorMessage(error) });
+        writeLog({ level: "error", message: "Failed to put a prompt to Claude", sessionId: this.sessionId, error: errorMessage(error), screen: this.screen.snapshot() });
       }
       throw error;
     } finally {
