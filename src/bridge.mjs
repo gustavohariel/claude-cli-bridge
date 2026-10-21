@@ -316,9 +316,14 @@ class Bridge {
     const args = [...runtimeArgs];
     const settingsIndex = args.indexOf("--settings");
     if (settingsIndex >= 0) this.mergeSettingsFile(args[settingsIndex + 1]);
+    const passed = new Set();
     for (const [flag, value] of this.flags) {
       if (!PASSTHROUGH_FLAGS.has(flag)) continue;
       if (flag === "--append-system-prompt" || flag === "--system-prompt") continue;
+      // The SDK host can repeat a flag it also sets itself (`--thinking-display`); the CLI gets it once.
+      const key = `${flag}\0${value}`;
+      if (passed.has(key)) continue;
+      passed.add(key);
       args.push(flag);
       if (value !== null) args.push(value);
     }

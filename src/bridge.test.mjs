@@ -126,6 +126,19 @@ test("a prompt's result carries Claude's reply when the runtime ends its turn be
   assert.deepEqual(sent.filter((message) => message.type === "result").map((message) => message.result), ["Blue"]);
 });
 
+test("the interactive Claude runs as the plain CLI, without the SDK's identity", () => {
+  const bridge = new Bridge(["--session-id", sessionId]);
+  const env = bridge.ttyEnv({ PATH: "/bin", CLAUDE_CODE_ENTRYPOINT: "sdk-ts", CLAUDE_AGENT_SDK_VERSION: "1.0.0", CLAUDE_CODE_EXECPATH: "/x", CLAUDE_AGENT_SDK_CLIENT_APP: "t3" });
+  assert.deepEqual(env, { PATH: "/bin" });
+});
+
+test("Claude is launched with each flag the host repeated only once", () => {
+  const bridge = new Bridge(["--session-id", sessionId, "--thinking-display", "summarized", "--add-dir", "/a", "--add-dir", "/b", "--thinking-display", "summarized"]);
+  const args = bridge.ttyArgs([]);
+  assert.equal(args.filter((arg) => arg === "--thinking-display").length, 1);
+  assert.deepEqual(args.filter((_, index) => args[index - 1] === "--add-dir"), ["/a", "/b"]);
+});
+
 test("a usage-limit notice read after its turn ended does not open another", () => {
   const { bridge } = liveBridge();
   bridge.onRecord(usageLimit("e3"), null);
