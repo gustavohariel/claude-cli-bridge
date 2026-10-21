@@ -1,0 +1,23 @@
+{
+  "name": "claude-cli-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Stand-in claude binary that runs T3 Code's Claude provider on the interactive Claude Code CLI",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.ts\" src/bridge.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xterm/headless": "^6.0.0",
+    "node-pty": "1.2.0-beta.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Stand-in `claude` for the Claude Agent SDK: runs SDK sessions in the interactive CLI.
+# Point T3 Code's Claude binary path (Settings > Providers > Claude) at this file.
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# A mise shim resolves node per working directory, and a project can pin one too old to run this,
+# so the newest installed node 24+ (it runs the TypeScript runtime as source) is used unless one is named.
+NODE=${CLAUDE_CLI_BRIDGE_NODE:-}
+if [ -z "$NODE" ]; then
+  for candidate in $(ls -d "$HOME"/.local/share/mise/installs/node/2[4-9]* "$HOME"/.local/share/mise/installs/node/[3-9][0-9]* 2>/dev/null | sort -V -r); do
+    if [ -x "$candidate/bin/node" ]; then NODE="$candidate/bin/node"; break; fi
+  done
+fi
+[ -n "$NODE" ] || NODE=node
+
+if [ -z "${CLAUDE_CLI_BRIDGE_REAL_CLAUDE:-}" ] && [ -x "$HOME/.local/share/mise/installs/claude/latest/claude" ]; then
+  export CLAUDE_CLI_BRIDGE_REAL_CLAUDE="$HOME/.local/share/mise/installs/claude/latest/claude"
+fi
+
+exec "$NODE" "${SCRIPT_DIR}/../src/bridge.mjs" "$@"

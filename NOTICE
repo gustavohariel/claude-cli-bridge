@@ -1,0 +1,6 @@
+claude-cli-bridge
+
+src/runtime/ and docs/adr/ started as claude-tty-acp from paseo-plugins
+(https://github.com/sleeyax/paseo-plugins), Copyright Sleeyax, licensed under the
+Apache License 2.0. It has since been modified: the ACP agent was removed and the
+runtime was changed to serve this bridge.
